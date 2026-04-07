@@ -32,7 +32,7 @@ npm run dev
 
 1. **数据源**：新建 MySQL / PostgreSQL / HTTP / Redis / Excel / Mock，填写 JSON 配置，点「测试连接」。
 2. **Excel**：在「Excel」类型下上传文件，将返回的 `fileId` 写入配置 JSON。
-3. **数据集**：选择「Mock」可只填 Mock JSON 与脚本；选「实时」需绑定数据源，并在 `fetchSpec` 中填写 SQL / 路径 / Redis key / 工作表名等。
+3. **数据集**：选择「Mock」可只填 Mock JSON 与脚本；选「实时」需绑定数据源。HTTP 数据源可直接在页面填写 `path/method/params/headers/body`，系统自动生成 `fetchSpec`。
 4. **脚本**：编写 JavaScript 片段；引擎会先注入 `const input = <原始数据的 JSON>`，请使用 `return` 返回结果（例如 `return input.filter(...)`）。
 5. **嵌入**：保存后在列表中复制 `http://127.0.0.1:8088/embed/data/{token}`，大屏侧用 HTTP GET 取数。
 
@@ -61,13 +61,22 @@ npm run dev
 }
 ```
 
-**HTTP API**（测试连接使用 `testPath`，如 `/get`）
+**HTTP API**（支持 GET/POST、Query 参数、Headers、Body）
 
 ```json
 {
   "baseUrl": "https://httpbin.org",
+  "method": "GET",
   "testPath": "/get",
-  "headers": {}
+  "params": {
+    "tenant": "demo"
+  },
+  "headers": {
+    "Authorization": "Bearer xxx"
+  },
+  "body": {
+    "name": "demo"
+  }
 }
 ```
 
@@ -103,10 +112,37 @@ npm run dev
 | 数据源类型 | fetchSpec 含义 |
 |-----------|----------------|
 | MySQL / PostgreSQL | 仅允许 `SELECT` / `WITH` SQL |
-| HTTP API | 相对路径，拼在数据源 `baseUrl` 后 |
+| HTTP API | 可填相对路径；也可填 JSON（`path/method/params/headers/body`） |
 | Redis | Key |
 | Excel | 工作表名，可留空使用第一张表 |
 | Mock | 不需要 |
+
+HTTP 数据源 `fetchSpec` JSON 示例：
+
+```json
+{
+  "path": "/post",
+  "method": "POST",
+  "params": {
+    "tenant": "cn"
+  },
+  "headers": {
+    "Authorization": "Bearer xxx"
+  },
+  "body": {
+    "keyword": "screen"
+  }
+}
+```
+
+> 说明：`fetchSpec` 与数据源配置可同时存在同名字段时，以 `fetchSpec` 为准（更适合做数据集级别的覆盖）。
+
+## 后端结构（当前）
+
+- `ConnectionTestService` / `DataFetchService`：负责流程编排与入口校验
+- `DataSourceHandlerManager`：维护 `SourceType -> Handler` 映射
+- `service/source/*SourceHandler`：按类型实现 `validateConfig / testConnection / fetch`
+- `DataSourceConfigValidator`：兼容保留原接口，内部已委托到各 Handler 的 `validateConfig`
 
 ## 生产环境嵌入地址
 
