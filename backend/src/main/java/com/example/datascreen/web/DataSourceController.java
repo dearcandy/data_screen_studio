@@ -29,31 +29,50 @@ public class DataSourceController {
         this.service = service;
     }
 
-    /** 列出全部数据源。 */
+    /**
+     * 列出全部数据源
+     * @return 数据源列表
+     */
     @GetMapping
     public ApiResponse<List<DataSourceEntity>> list() {
         return ApiResponse.ok(service.list());
     }
 
-    /** 按主键查询。 */
+    /**
+     * 按主键查询数据源
+     * @param id 数据源ID
+     * @return 数据源
+     */
     @GetMapping("/{id}")
     public ApiResponse<DataSourceEntity> get(@PathVariable Long id) {
         return ApiResponse.ok(service.get(id));
     }
 
-    /** 新建数据源。 */
+    /**
+     * 新建数据源
+     * @param req 创建请求
+     * @return 数据源
+     */
     @PostMapping
     public ApiResponse<DataSourceEntity> create(@Valid @RequestBody DataSourceRequest req) {
         return ApiResponse.ok(service.create(req));
     }
 
-    /** 更新指定数据源。 */
+    /**
+     * 更新指定数据源
+     * @param id 数据源ID
+     * @param req 更新请求
+     * @return 数据源
+     */
     @PutMapping("/{id}")
     public ApiResponse<DataSourceEntity> update(@PathVariable Long id, @Valid @RequestBody DataSourceRequest req) {
         return ApiResponse.ok(service.update(id, req));
     }
 
-    /** 删除数据源。 */
+    /**
+     * 删除数据源
+     * @param id 数据源ID
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         service.delete(id);

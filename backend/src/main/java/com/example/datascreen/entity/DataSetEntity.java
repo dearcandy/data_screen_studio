@@ -22,43 +22,61 @@ public class DataSetEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 数据集名称。 */
+    /**
+     * 数据集名称
+     */
     private String name;
 
-    /** Optional when FetchMode.MOCK */
+    /**
+     * 数据源ID
+     */
     @TableField("data_source_id")
     private Long dataSourceId;
 
-    /** 取数模式：LIVE 或 MOCK。 */
+    /**
+     * 数据获取模式
+     */
     @TableField("fetch_mode")
     private FetchMode fetchMode = FetchMode.LIVE;
 
-    /** For JDBC: SQL; for Redis: key; for HTTP: path appended to base URL */
+    /**
+     * 数据获取配置
+     */
     @TableField("fetch_spec")
     private String fetchSpec;
 
-    /** Mock payload as JSON (array or object) */
+    /**
+     * Mock数据内容
+     */
     @TableField("mock_json")
     private String mockJson;
 
     /**
-     * JavaScript body: receives {@code input}, must return transformed value.
-     * Example: {@code return input.filter(r => r.v > 0);}
+     * 数据处理脚本
      */
     @TableField("script_text")
     private String scriptText;
 
+    /**
+     * 接口访问路径token
+     */
     @TableField("public_token")
     private String publicToken = UUID.randomUUID().toString().replace("-", "");
 
-    /** 是否启用嵌入接口访问。 */
+    /**
+     * 是否启用嵌入接口访问
+     */
     private boolean enabled = true;
 
-    /** 创建时间。 */
+    /**
+     * 创建时间
+     */
     @TableField("created_at")
     private Instant createdAt = Instant.now();
 
-    /** 最后更新时间。 */
+    /**
+     * 最后更新时间
+     */
     @TableField("updated_at")
     private Instant updatedAt = Instant.now();
 }

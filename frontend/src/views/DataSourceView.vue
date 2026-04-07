@@ -45,9 +45,22 @@
 
         <template v-else-if="form.type === 'HTTP_API'">
           <el-form-item label="Base URL"><el-input v-model="form.config.baseUrl" placeholder="https://api.example.com" /></el-form-item>
+          <el-form-item label="Method">
+            <el-select v-model="form.config.method" style="width: 100%">
+              <el-option label="GET" value="GET" />
+              <el-option label="POST" value="POST" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="Test Path"><el-input v-model="form.config.testPath" placeholder="/health" /></el-form-item>
+          <el-form-item label="Params(JSON)">
+            <el-input v-model="form.config.paramsText" type="textarea" :rows="4" class="mono" />
+          </el-form-item>
           <el-form-item label="Headers(JSON)">
             <el-input v-model="form.config.headersText" type="textarea" :rows="4" class="mono" />
+          </el-form-item>
+          <el-form-item label="Body(JSON)">
+            <el-input v-model="form.config.bodyText" type="textarea" :rows="5" class="mono" />
+            <div class="hint">POST 时会携带 body；GET 会忽略 body。</div>
           </el-form-item>
         </template>
 
@@ -118,7 +131,7 @@ function defaultConfigObject(type) {
     case 'POSTGRESQL':
       return { host: '127.0.0.1', port: 5432, database: 'postgres', username: 'postgres', password: 'secret' }
     case 'HTTP_API':
-      return { baseUrl: 'https://httpbin.org', testPath: '/get', headersText: '{}' }
+      return { baseUrl: 'https://httpbin.org', method: 'GET', testPath: '/get', paramsText: '{}', headersText: '{}', bodyText: '{}' }
     case 'REDIS':
       return { host: '127.0.0.1', port: 6379, password: '', database: 0 }
     case 'EXCEL':
@@ -142,19 +155,37 @@ function buildConfigObject() {
     }
   }
   if (t === 'HTTP_API') {
+    let params = {}
     let headers = {}
+    let body = null
+    try {
+      params = form.config.paramsText ? JSON.parse(form.config.paramsText) : {}
+    } catch {
+      throw new Error('Params 必须是合法 JSON 对象')
+    }
     try {
       headers = form.config.headersText ? JSON.parse(form.config.headersText) : {}
     } catch {
       throw new Error('Headers 必须是合法 JSON 对象')
+    }
+    try {
+      body = form.config.bodyText ? JSON.parse(form.config.bodyText) : null
+    } catch {
+      throw new Error('Body 必须是合法 JSON')
+    }
+    if (typeof params !== 'object' || params === null || Array.isArray(params)) {
+      throw new Error('Params 必须是 JSON 对象')
     }
     if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
       throw new Error('Headers 必须是 JSON 对象')
     }
     return {
       baseUrl: String(form.config.baseUrl || '').trim(),
+      method: String(form.config.method || 'GET').trim().toUpperCase(),
       testPath: String(form.config.testPath || '').trim() || '/',
-      headers
+      params,
+      headers,
+      body
     }
   }
   if (t === 'REDIS') {
@@ -213,8 +244,11 @@ function applyRowConfig(type, configJson) {
   } else if (type === 'HTTP_API') {
     form.config = {
       baseUrl: parsed.baseUrl ?? '',
+      method: parsed.method ?? 'GET',
       testPath: parsed.testPath ?? '/',
-      headersText: JSON.stringify(parsed.headers ?? {}, null, 2)
+      paramsText: JSON.stringify(parsed.params ?? {}, null, 2),
+      headersText: JSON.stringify(parsed.headers ?? {}, null, 2),
+      bodyText: JSON.stringify(parsed.body ?? {}, null, 2)
     }
   } else if (type === 'REDIS') {
     form.config = {

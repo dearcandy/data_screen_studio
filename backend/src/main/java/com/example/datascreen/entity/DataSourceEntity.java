@@ -22,24 +22,36 @@ public class DataSourceEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 数据源展示名称。 */
+    /**
+     * 数据源展示名称
+     */
     private String name;
 
-    /** 数据源类型（MySQL、PostgreSQL、HTTP、Redis、Excel、Mock）。 */
+    /**
+     * 数据源类型
+     */
     private SourceType type;
 
-    /** JSON: host, port, jdbcUrl, username, password, baseUrl, redis host, excel file id, etc. */
+    /**
+     * 数据源连接配置
+     */
     @TableField("config_json")
     private String configJson;
 
-    /** 备注信息，便于区分环境用途。 */
+    /**
+     * 备注信息，便于区分环境用途。
+     */
     private String remark;
 
-    /** 创建时间。 */
+    /**
+     * 创建时间
+     */
     @TableField("created_at")
     private Instant createdAt = Instant.now();
 
-    /** 最后更新时间。 */
+    /**
+     * 最后更新时间
+     */
     @TableField("updated_at")
     private Instant updatedAt = Instant.now();
 }

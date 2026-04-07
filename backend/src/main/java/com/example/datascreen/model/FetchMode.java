@@ -1,8 +1,12 @@
 package com.example.datascreen.model;
 
 public enum FetchMode {
-    /** Use mockJson on dataset only */
+    /**
+     * mock响应
+     */
     MOCK,
-    /** Fetch from configured data source */
+    /**
+     * 实时获取
+     */
     LIVE
 }

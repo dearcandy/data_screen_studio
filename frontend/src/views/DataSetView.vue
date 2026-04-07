@@ -25,7 +25,7 @@
       </el-table>
     </div>
 
-    <el-dialog v-model="visible" :title="form.id ? '编辑数据集' : '新建数据集'" width="800px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑数据集' : '新建数据集'" width="880px">
       <el-form label-width="110px">
         <el-form-item label="名称">
           <el-input v-model="form.name" />
@@ -37,14 +37,50 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item v-if="form.fetchMode === 'LIVE'" label="数据源">
-          <el-select v-model="form.dataSourceId" clearable placeholder="选择数据源" style="width: 100%">
+          <el-select
+            v-model="form.dataSourceId"
+            clearable
+            placeholder="选择数据源"
+            style="width: 100%"
+            @change="onDataSourceChange"
+          >
             <el-option v-for="s in sources" :key="s.id" :label="`${s.id} · ${s.name} (${s.type})`" :value="s.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="fetchSpec">
+
+        <template v-if="form.fetchMode === 'LIVE' && showHttpFetchForm">
+          <el-form-item label="路径">
+            <el-input v-model="form.httpPath" placeholder="例如 /users 或 /api/v1/query" />
+          </el-form-item>
+          <el-form-item label="Method">
+            <el-select v-model="form.httpMethod" style="width: 100%">
+              <el-option label="GET" value="GET" />
+              <el-option label="POST" value="POST" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="Query 参数">
+            <el-input v-model="form.httpParamsText" type="textarea" :rows="4" class="mono" placeholder='JSON 对象，如 {"id":"1"}' />
+          </el-form-item>
+          <el-form-item label="Headers">
+            <el-input v-model="form.httpHeadersText" type="textarea" :rows="3" class="mono" placeholder='JSON 对象，如 {"Authorization":"Bearer ..."}' />
+          </el-form-item>
+          <el-form-item label="Body">
+            <el-input v-model="form.httpBodyText" type="textarea" :rows="4" class="mono" placeholder="仅 POST 时作为 JSON 请求体发送；留空则不传 body" />
+          </el-form-item>
+          <el-form-item label="fetchSpec 预览">
+            <el-input :model-value="previewHttpFetchSpec" type="textarea" :rows="5" class="mono" readonly />
+            <div class="hint">保存时会自动生成并写入 fetchSpec，无需手写 JSON。</div>
+          </el-form-item>
+        </template>
+
+        <el-form-item v-else label="fetchSpec">
           <el-input v-model="form.fetchSpec" type="textarea" :rows="4" class="mono" />
           <div class="hint">
-            JDBC：填 SELECT 语句。HTTP：填路径（会拼到数据源的 baseUrl）。Redis：填 key。Excel：可填工作表名，留空用第一张表。
+            <template v-if="form.fetchMode !== 'LIVE'">实时模式外可留空；Mock 模式主要用下方 Mock JSON。</template>
+            <template v-else-if="!form.dataSourceId">请先选择数据源。</template>
+            <template v-else>
+              JDBC：填 SELECT 语句。Redis：填 key。Excel：工作表名，留空用第一张表。
+            </template>
           </div>
         </el-form-item>
         <el-form-item label="Mock JSON">
@@ -75,7 +111,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listDataSets, saveDataSet, removeDataSet, previewDataSet, regenerateToken } from '../api/datasetApi'
 import { listDataSources } from '../api/datasourceApi'
@@ -92,10 +128,135 @@ const form = reactive({
   dataSourceId: null,
   fetchMode: 'MOCK',
   fetchSpec: '',
+  httpPath: '/',
+  httpMethod: 'GET',
+  httpParamsText: '{}',
+  httpHeadersText: '{}',
+  httpBodyText: '',
   mockJson: '[\n  { "name": "系列A", "value": 120 },\n  { "name": "系列B", "value": 86 }\n]',
   scriptText: 'return input;',
   enabled: true
 })
+
+const selectedSource = computed(() => sources.value.find((s) => s.id === form.dataSourceId) || null)
+const selectedSourceType = computed(() => selectedSource.value?.type ?? null)
+const showHttpFetchForm = computed(() => form.fetchMode === 'LIVE' && selectedSourceType.value === 'HTTP_API')
+
+function resetHttpFormDefault() {
+  form.httpPath = '/'
+  form.httpMethod = 'GET'
+  form.httpParamsText = '{}'
+  form.httpHeadersText = '{}'
+  form.httpBodyText = ''
+}
+
+/** 将已保存的 fetchSpec 解析到 HTTP 表单（路径或 JSON）。 */
+function parseFetchSpecToHttpForm(fetchSpec) {
+  const raw = (fetchSpec || '').trim()
+  if (!raw) {
+    resetHttpFormDefault()
+    return
+  }
+  if (raw.startsWith('{')) {
+    try {
+      const o = JSON.parse(raw)
+      if (o && typeof o === 'object' && !Array.isArray(o)) {
+        form.httpPath = o.path != null ? String(o.path) : '/'
+        form.httpMethod = String(o.method || 'GET').trim().toUpperCase() === 'POST' ? 'POST' : 'GET'
+        form.httpParamsText = JSON.stringify(
+          o.params && typeof o.params === 'object' && !Array.isArray(o.params) ? o.params : {},
+          null,
+          2
+        )
+        form.httpHeadersText = JSON.stringify(
+          o.headers && typeof o.headers === 'object' && !Array.isArray(o.headers) ? o.headers : {},
+          null,
+          2
+        )
+        if (o.body !== undefined && o.body !== null) {
+          form.httpBodyText = JSON.stringify(o.body, null, 2)
+        } else {
+          form.httpBodyText = ''
+        }
+        return
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  form.httpPath = raw || '/'
+  form.httpMethod = 'GET'
+  form.httpParamsText = '{}'
+  form.httpHeadersText = '{}'
+  form.httpBodyText = ''
+}
+
+/** 从 HTTP 表单生成保存用的 fetchSpec JSON 字符串。 */
+function buildHttpFetchSpec() {
+  let params = {}
+  let headers = {}
+  try {
+    params = form.httpParamsText?.trim() ? JSON.parse(form.httpParamsText) : {}
+  } catch {
+    throw new Error('Query 参数必须是合法 JSON 对象')
+  }
+  try {
+    headers = form.httpHeadersText?.trim() ? JSON.parse(form.httpHeadersText) : {}
+  } catch {
+    throw new Error('Headers 必须是合法 JSON 对象')
+  }
+  if (typeof params !== 'object' || params === null || Array.isArray(params)) {
+    throw new Error('Query 参数必须是 JSON 对象')
+  }
+  if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
+    throw new Error('Headers 必须是 JSON 对象')
+  }
+
+  let body
+  if (form.httpBodyText && form.httpBodyText.trim()) {
+    try {
+      body = JSON.parse(form.httpBodyText)
+    } catch {
+      throw new Error('Body 必须是合法 JSON')
+    }
+  }
+
+  const method = String(form.httpMethod || 'GET').trim().toUpperCase()
+  if (method !== 'GET' && method !== 'POST') {
+    throw new Error('Method 仅支持 GET / POST')
+  }
+
+  const out = {
+    path: String(form.httpPath || '').trim() || '/',
+    method
+  }
+  if (Object.keys(params).length) out.params = params
+  if (Object.keys(headers).length) out.headers = headers
+  if (method === 'POST' && body !== undefined) out.body = body
+
+  return JSON.stringify(out)
+}
+
+const previewHttpFetchSpec = computed(() => {
+  if (!showHttpFetchForm.value) return ''
+  try {
+    return JSON.stringify(JSON.parse(buildHttpFetchSpec()), null, 2)
+  } catch (e) {
+    return `填写有误: ${e.message}`
+  }
+})
+
+function onDataSourceChange() {
+  if (selectedSourceType.value !== 'HTTP_API') return
+  const raw = (form.fetchSpec || '').trim()
+  if (raw && !raw.startsWith('{') && /\s/.test(raw)) {
+    resetHttpFormDefault()
+    form.fetchSpec = ''
+    ElMessage.info('已切换为 HTTP 数据源，请填写路径与参数')
+    return
+  }
+  parseFetchSpecToHttpForm(form.fetchSpec)
+}
 
 /** 大屏嵌入应请求后端地址（非 Vite 端口） */
 const backendOrigin = import.meta.env.VITE_BACKEND_ORIGIN || 'http://127.0.0.1:8088'
@@ -115,6 +276,7 @@ function openCreate() {
   form.dataSourceId = null
   form.fetchMode = 'MOCK'
   form.fetchSpec = ''
+  resetHttpFormDefault()
   form.mockJson = form.mockJson
   form.scriptText = 'return input;'
   form.enabled = true
@@ -127,6 +289,12 @@ function openEdit(row) {
   form.dataSourceId = row.dataSourceId
   form.fetchMode = row.fetchMode
   form.fetchSpec = row.fetchSpec || ''
+  const src = sources.value.find((s) => s.id === row.dataSourceId)
+  if (src?.type === 'HTTP_API') {
+    parseFetchSpecToHttpForm(row.fetchSpec || '')
+  } else {
+    resetHttpFormDefault()
+  }
   form.mockJson = row.mockJson || '[]'
   form.scriptText = row.scriptText || 'return input;'
   form.enabled = row.enabled
@@ -134,12 +302,21 @@ function openEdit(row) {
 }
 
 async function submit() {
+  let fetchSpec = form.fetchSpec
+  if (form.fetchMode === 'LIVE' && selectedSourceType.value === 'HTTP_API') {
+    try {
+      fetchSpec = buildHttpFetchSpec()
+    } catch (e) {
+      ElMessage.error(e.message || 'HTTP 取数配置有误')
+      return
+    }
+  }
   await saveDataSet({
     id: form.id,
     name: form.name,
     dataSourceId: form.fetchMode === 'LIVE' ? form.dataSourceId : null,
     fetchMode: form.fetchMode,
-    fetchSpec: form.fetchSpec,
+    fetchSpec,
     mockJson: form.mockJson,
     scriptText: form.scriptText,
     enabled: form.enabled

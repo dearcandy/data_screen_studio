@@ -32,31 +32,50 @@ public class DataSetController {
         this.executionService = executionService;
     }
 
-    /** 列出全部数据集。 */
+    /**
+     * 列出全部数据集
+     * @return 数据集列表
+     */
     @GetMapping
     public ApiResponse<List<DataSetEntity>> list() {
         return ApiResponse.ok(crudService.list());
     }
 
-    /** 按主键查询（含 {@code publicToken} 等字段）。 */
+    /**
+     * 按主键查询
+     * @param id 数据集ID
+     * @return 数据集
+     */
     @GetMapping("/{id}")
     public ApiResponse<DataSetEntity> get(@PathVariable Long id) {
         return ApiResponse.ok(crudService.get(id));
     }
 
-    /** 新建数据集。 */
+    /**
+     * 新建数据集
+     * @param req 数据集
+     * @return 数据集
+     */
     @PostMapping
     public ApiResponse<DataSetEntity> create(@Valid @RequestBody DataSetRequest req) {
         return ApiResponse.ok(crudService.create(req));
     }
 
-    /** 更新指定数据集。 */
+    /**
+     * 更新指定数据集
+     * @param id 数据集ID
+     * @param req 数据集
+     * @return 数据集
+     */
     @PutMapping("/{id}")
     public ApiResponse<DataSetEntity> update(@PathVariable Long id, @Valid @RequestBody DataSetRequest req) {
         return ApiResponse.ok(crudService.update(id, req));
     }
 
-    /** 删除数据集。 */
+    /**
+     * 删除数据集
+     * @param id 数据集ID
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         crudService.delete(id);
@@ -64,7 +83,9 @@ public class DataSetController {
     }
 
     /**
-     * 执行完整链路：取数（或 Mock）+ 脚本，返回与嵌入接口一致的 {@code data} 形态（外层仍包 {@link ApiResponse}）。
+     * 执行完整链路：取数（或 Mock）+ 脚本，返回与嵌入接口一致的data形态
+     * @param id 数据集ID
+     * @return 预览数据
      */
     @PostMapping("/{id}/preview")
     public ApiResponse<Object> preview(@PathVariable Long id) throws Exception {
@@ -72,7 +93,11 @@ public class DataSetController {
         return ApiResponse.ok(data);
     }
 
-    /** 重新生成 {@code publicToken}，旧嵌入 URL 失效。 */
+    /**
+     *  重新生成 {@code publicToken}，旧嵌入 URL 失效
+     * @param id 数据集ID
+     * @return 数据集
+     */
     @PostMapping("/{id}/regenerate-token")
     public ApiResponse<DataSetEntity> regenerateToken(@PathVariable Long id) {
         return ApiResponse.ok(crudService.regenerateToken(id));
