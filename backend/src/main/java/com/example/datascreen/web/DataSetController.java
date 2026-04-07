@@ -1,0 +1,80 @@
+package com.example.datascreen.web;
+
+import com.example.datascreen.dto.ApiResponse;
+import com.example.datascreen.dto.DataSetRequest;
+import com.example.datascreen.entity.DataSetEntity;
+import com.example.datascreen.service.DataSetCrudService;
+import com.example.datascreen.service.DataSetExecutionService;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * 数据集管理：绑定数据源或 Mock、配置取数说明与脚本，并提供预览与公开 token 轮换。
+ */
+@RestController
+@RequestMapping("/api/datasets")
+public class DataSetController {
+
+    private final DataSetCrudService crudService;
+    private final DataSetExecutionService executionService;
+
+    public DataSetController(DataSetCrudService crudService, DataSetExecutionService executionService) {
+        this.crudService = crudService;
+        this.executionService = executionService;
+    }
+
+    /** 列出全部数据集。 */
+    @GetMapping
+    public ApiResponse<List<DataSetEntity>> list() {
+        return ApiResponse.ok(crudService.list());
+    }
+
+    /** 按主键查询（含 {@code publicToken} 等字段）。 */
+    @GetMapping("/{id}")
+    public ApiResponse<DataSetEntity> get(@PathVariable Long id) {
+        return ApiResponse.ok(crudService.get(id));
+    }
+
+    /** 新建数据集。 */
+    @PostMapping
+    public ApiResponse<DataSetEntity> create(@Valid @RequestBody DataSetRequest req) {
+        return ApiResponse.ok(crudService.create(req));
+    }
+
+    /** 更新指定数据集。 */
+    @PutMapping("/{id}")
+    public ApiResponse<DataSetEntity> update(@PathVariable Long id, @Valid @RequestBody DataSetRequest req) {
+        return ApiResponse.ok(crudService.update(id, req));
+    }
+
+    /** 删除数据集。 */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        crudService.delete(id);
+        return ApiResponse.ok(null);
+    }
+
+    /**
+     * 执行完整链路：取数（或 Mock）+ 脚本，返回与嵌入接口一致的 {@code data} 形态（外层仍包 {@link ApiResponse}）。
+     */
+    @PostMapping("/{id}/preview")
+    public ApiResponse<Object> preview(@PathVariable Long id) throws Exception {
+        Object data = executionService.executeById(id);
+        return ApiResponse.ok(data);
+    }
+
+    /** 重新生成 {@code publicToken}，旧嵌入 URL 失效。 */
+    @PostMapping("/{id}/regenerate-token")
+    public ApiResponse<DataSetEntity> regenerateToken(@PathVariable Long id) {
+        return ApiResponse.ok(crudService.regenerateToken(id));
+    }
+}
