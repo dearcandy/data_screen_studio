@@ -6,5 +6,6 @@ public enum SourceType {
     HTTP_API,
     REDIS,
     EXCEL,
-    MOCK
+    MOCK,
+    KAFKA
 }

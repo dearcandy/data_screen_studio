@@ -30,6 +30,7 @@
             <el-option label="PostgreSQL" value="POSTGRESQL" />
             <el-option label="HTTP API" value="HTTP_API" />
             <el-option label="Redis" value="REDIS" />
+            <el-option label="Kafka" value="KAFKA" />
             <el-option label="Excel 文件" value="EXCEL" />
             <el-option label="Mock" value="MOCK" />
           </el-select>
@@ -69,6 +70,46 @@
           <el-form-item label="Port"><el-input-number v-model="form.config.port" :min="1" :max="65535" /></el-form-item>
           <el-form-item label="Password"><el-input v-model="form.config.password" show-password /></el-form-item>
           <el-form-item label="Database"><el-input-number v-model="form.config.database" :min="0" :max="64" /></el-form-item>
+        </template>
+
+        <template v-else-if="form.type === 'KAFKA'">
+          <el-form-item label="Bootstrap">
+            <el-input v-model="form.config.bootstrapServers" placeholder="host1:9092,host2:9092" />
+          </el-form-item>
+          <el-form-item label="Test Topic">
+            <el-input v-model="form.config.testTopic" placeholder="可选，测试时校验该 topic 是否存在" />
+          </el-form-item>
+          <el-form-item label="Security">
+            <el-select v-model="form.config.securityProtocol" style="width: 100%">
+              <el-option label="PLAINTEXT" value="PLAINTEXT" />
+              <el-option label="SSL" value="SSL" />
+              <el-option label="SASL_PLAINTEXT" value="SASL_PLAINTEXT" />
+              <el-option label="SASL_SSL" value="SASL_SSL" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="SASL 机制">
+            <el-select v-model="form.config.saslMechanism" clearable placeholder="无 SASL 可留空" style="width: 100%">
+              <el-option label="PLAIN" value="PLAIN" />
+              <el-option label="SCRAM-SHA-256" value="SCRAM-SHA-256" />
+              <el-option label="SCRAM-SHA-512" value="SCRAM-SHA-512" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="SASL 用户"><el-input v-model="form.config.saslUsername" /></el-form-item>
+          <el-form-item label="SASL 密码"><el-input v-model="form.config.saslPassword" show-password /></el-form-item>
+          <el-form-item label="默认 Topic">
+            <el-input v-model="form.config.defaultTopic" placeholder="数据集 fetchSpec 可留空时使用" />
+          </el-form-item>
+          <el-form-item label="默认 maxRecords"><el-input-number v-model="form.config.defaultMaxRecords" :min="1" :max="500" /></el-form-item>
+          <el-form-item label="默认 poll(ms)"><el-input-number v-model="form.config.defaultPollTimeoutMs" :min="1000" :max="120000" /></el-form-item>
+          <el-form-item label="默认 offset">
+            <el-select v-model="form.config.defaultAutoOffsetReset" style="width: 100%">
+              <el-option label="latest" value="latest" />
+              <el-option label="earliest" value="earliest" />
+            </el-select>
+          </el-form-item>
+          <div class="hint" style="margin: -8px 0 12px 110px">
+            取数使用独立 consumer 组短时 poll，返回消息列表（含 topic/partition/offset/key/value）。value 若为 JSON 会尝试解析。
+          </div>
         </template>
 
         <template v-else-if="form.type === 'EXCEL'">
@@ -134,6 +175,19 @@ function defaultConfigObject(type) {
       return { baseUrl: 'https://httpbin.org', method: 'GET', testPath: '/get', paramsText: '{}', headersText: '{}', bodyText: '{}' }
     case 'REDIS':
       return { host: '127.0.0.1', port: 6379, password: '', database: 0 }
+    case 'KAFKA':
+      return {
+        bootstrapServers: '127.0.0.1:9092',
+        testTopic: '',
+        securityProtocol: 'PLAINTEXT',
+        saslMechanism: '',
+        saslUsername: '',
+        saslPassword: '',
+        defaultTopic: '',
+        defaultMaxRecords: 100,
+        defaultPollTimeoutMs: 8000,
+        defaultAutoOffsetReset: 'latest'
+      }
     case 'EXCEL':
       return { fileId: '' }
     case 'MOCK':
@@ -196,6 +250,28 @@ function buildConfigObject() {
       database: Number(form.config.database || 0)
     }
   }
+  if (t === 'KAFKA') {
+    const o = {
+      bootstrapServers: String(form.config.bootstrapServers || '').trim(),
+      testTopic: String(form.config.testTopic || '').trim(),
+      securityProtocol: String(form.config.securityProtocol || 'PLAINTEXT').trim(),
+      saslMechanism: String(form.config.saslMechanism || '').trim(),
+      saslUsername: String(form.config.saslUsername || '').trim(),
+      saslPassword: String(form.config.saslPassword || ''),
+      defaultTopic: String(form.config.defaultTopic || '').trim(),
+      defaultMaxRecords: Number(form.config.defaultMaxRecords ?? 100),
+      defaultPollTimeoutMs: Number(form.config.defaultPollTimeoutMs ?? 8000),
+      defaultAutoOffsetReset: String(form.config.defaultAutoOffsetReset || 'latest').trim().toLowerCase()
+    }
+    if (!o.saslMechanism) {
+      delete o.saslMechanism
+      delete o.saslUsername
+      delete o.saslPassword
+    }
+    if (!o.testTopic) delete o.testTopic
+    if (!o.defaultTopic) delete o.defaultTopic
+    return o
+  }
   if (t === 'EXCEL') {
     return { fileId: String(form.config.fileId || '').trim() }
   }
@@ -256,6 +332,19 @@ function applyRowConfig(type, configJson) {
       port: Number(parsed.port ?? 6379),
       password: parsed.password ?? '',
       database: Number(parsed.database ?? 0)
+    }
+  } else if (type === 'KAFKA') {
+    form.config = {
+      bootstrapServers: parsed.bootstrapServers ?? '',
+      testTopic: parsed.testTopic ?? '',
+      securityProtocol: parsed.securityProtocol ?? 'PLAINTEXT',
+      saslMechanism: parsed.saslMechanism ?? '',
+      saslUsername: parsed.saslUsername ?? '',
+      saslPassword: parsed.saslPassword ?? '',
+      defaultTopic: parsed.defaultTopic ?? '',
+      defaultMaxRecords: Number(parsed.defaultMaxRecords ?? 100),
+      defaultPollTimeoutMs: Number(parsed.defaultPollTimeoutMs ?? 8000),
+      defaultAutoOffsetReset: parsed.defaultAutoOffsetReset ?? 'latest'
     }
   } else if (type === 'EXCEL') {
     form.config = { fileId: parsed.fileId ?? '' }

@@ -79,7 +79,8 @@
             <template v-if="form.fetchMode !== 'LIVE'">实时模式外可留空；Mock 模式主要用下方 Mock JSON。</template>
             <template v-else-if="!form.dataSourceId">请先选择数据源。</template>
             <template v-else>
-              JDBC：填 SELECT 语句。Redis：填 key。Excel：工作表名，留空用第一张表。
+              JDBC：填 SELECT。HTTP：见上方表单。Kafka：topic 名，或 JSON（topic / maxRecords / pollTimeoutMs /
+              autoOffsetReset）。Redis：key。Excel：工作表名，留空用第一张表。
             </template>
           </div>
         </el-form-item>

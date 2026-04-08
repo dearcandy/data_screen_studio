@@ -1,5 +1,7 @@
 package com.example.datascreen.service.source;
 
+import com.example.datascreen.constant.JdbcClientConstants;
+import com.example.datascreen.constant.JdbcFetchConstants;
 import com.example.datascreen.model.SourceType;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
@@ -8,6 +10,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,8 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * PostgreSQL 数据源处理器
+ */
 @Component
 public class PostgresqlSourceHandler implements DataSourceTypeHandler {
+
     @Override
     public SourceType supportType() {
         return SourceType.POSTGRESQL;
@@ -26,46 +33,55 @@ public class PostgresqlSourceHandler implements DataSourceTypeHandler {
     public void validateConfig(JsonNode cfg) {
         HandlerValidationSupport.checkUnknown(cfg, Set.of("host", "port", "database", "username", "password"));
         HandlerValidationSupport.require(cfg, "host", "port", "database", "username", "password");
+        // 校验 port 为正整数
         HandlerValidationSupport.requirePositiveInt(cfg);
+        // 可选：校验 database 非空已在 require 中完成
     }
 
     @Override
-    public void testConnection(JsonNode cfg) throws Exception {
-        try (Connection c = DriverManager.getConnection(JdbcUrlBuilder.buildPostgresUrl(cfg),
-                cfg.path("username").asText(""),
-                cfg.path("password").asText(""))) {
-            c.isValid(3);
+    public void testConnection(JsonNode cfg) throws SQLException {
+        String url = JdbcUrlBuilder.buildPostgresUrl(cfg);
+        String username = cfg.path("username").asText("");
+        String password = cfg.path("password").asText("");
+        try (Connection conn = DriverManager.getConnection(url, username, password)) {
+            if (!conn.isValid(JdbcClientConstants.CONNECTION_VALID_TIMEOUT_SECONDS)) {
+                throw new SQLException("Connection is not valid");
+            }
         }
     }
 
     @Override
-    public Object fetch(JsonNode cfg, String fetchSpec) throws Exception {
-        String sql = fetchSpec != null ? fetchSpec : "";
-        if (sql.isBlank()) {
-            throw new IllegalArgumentException("请填写 SQL（数据集 fetchSpec）");
-        }
-        String normalized = sql.stripLeading();
-        if (!normalized.regionMatches(true, 0, "SELECT", 0, 6)
-                && !normalized.regionMatches(true, 0, "WITH", 0, 4)) {
-            throw new IllegalArgumentException("仅允许 SELECT / WITH 查询");
-        }
-        try (Connection conn = DriverManager.getConnection(JdbcUrlBuilder.buildPostgresUrl(cfg),
-                cfg.path("username").asText(""),
-                cfg.path("password").asText(""));
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
-            return resultSetToList(rs);
+    public Object fetch(JsonNode cfg, String fetchSpec) throws SQLException {
+        String sql = JdbcFetchConstants.requireReadOnlySql(fetchSpec);
+
+        String url = JdbcUrlBuilder.buildPostgresUrl(cfg);
+        String username = cfg.path("username").asText("");
+        String password = cfg.path("password").asText("");
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement()) {
+            // 设置查询超时，防止慢查询阻塞
+            stmt.setQueryTimeout(JdbcClientConstants.STATEMENT_QUERY_TIMEOUT_SECONDS);
+            try (ResultSet rs = stmt.executeQuery(sql)) {
+                return resultSetToList(rs);
+            }
         }
     }
 
-    private List<Map<String, Object>> resultSetToList(ResultSet rs) throws Exception {
-        ResultSetMetaData md = rs.getMetaData();
-        int cols = md.getColumnCount();
+    /**
+     * 将 ResultSet 转换为 List<Map<String, Object>>
+     * 列名使用 getColumnLabel（支持别名），值为对应 Java 对象
+     */
+    private List<Map<String, Object>> resultSetToList(ResultSet rs) throws SQLException {
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
         List<Map<String, Object>> rows = new ArrayList<>();
         while (rs.next()) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            for (int i = 1; i <= cols; i++) {
-                row.put(md.getColumnLabel(i), rs.getObject(i));
+            Map<String, Object> row = new LinkedHashMap<>(columnCount);
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = metaData.getColumnLabel(i);
+                Object value = rs.getObject(i);
+                row.put(columnName, value);
             }
             rows.add(row);
         }

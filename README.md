@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- 后端：Spring Boot 3、MyBatis-Plus（MySQL 元数据）、WebClient、Lettuce（动态 Redis）、JDBC、Apache POI（Excel）、GraalVM JS（脚本）
+- 后端：Spring Boot 3、MyBatis-Plus（MySQL 元数据）、WebClient、Lettuce（动态 Redis）、Kafka Clients、JDBC、Apache POI（Excel）、GraalVM JS（脚本）
 - 前端：Vue 3、Vite、Element Plus、Axios
 
 ## 快速开始
@@ -30,7 +30,7 @@ npm run dev
 
 ### 典型流程
 
-1. **数据源**：新建 MySQL / PostgreSQL / HTTP / Redis / Excel / Mock，填写 JSON 配置，点「测试连接」。
+1. **数据源**：新建 MySQL / PostgreSQL / HTTP / Redis / Kafka / Excel / Mock，填写 JSON 配置，点「测试连接」。
 2. **Excel**：在「Excel」类型下上传文件，将返回的 `fileId` 写入配置 JSON。
 3. **数据集**：选择「Mock」可只填 Mock JSON 与脚本；选「实时」需绑定数据源。HTTP 数据源可直接在页面填写 `path/method/params/headers/body`，系统自动生成 `fetchSpec`。
 4. **脚本**：编写 JavaScript 片段；引擎会先注入 `const input = <原始数据的 JSON>`，请使用 `return` 返回结果（例如 `return input.filter(...)`）。
@@ -91,6 +91,32 @@ npm run dev
 }
 ```
 
+**Kafka**（测试连接：`AdminClient`；取数：短时 `Consumer#poll`）
+
+```json
+{
+  "bootstrapServers": "127.0.0.1:9092",
+  "testTopic": "可选，存在则校验 topic",
+  "securityProtocol": "PLAINTEXT",
+  "defaultTopic": "可选，数据集 fetchSpec 为空时用",
+  "defaultMaxRecords": 100,
+  "defaultPollTimeoutMs": 8000,
+  "defaultAutoOffsetReset": "latest"
+}
+```
+
+SASL 示例（`securityProtocol` 需为 `SASL_PLAINTEXT` 或 `SASL_SSL`）：
+
+```json
+{
+  "bootstrapServers": "kafka.example.com:9093",
+  "securityProtocol": "SASL_SSL",
+  "saslMechanism": "PLAIN",
+  "saslUsername": "user",
+  "saslPassword": "secret"
+}
+```
+
 **Excel**
 
 ```json
@@ -113,6 +139,7 @@ npm run dev
 |-----------|----------------|
 | MySQL / PostgreSQL | 仅允许 `SELECT` / `WITH` SQL |
 | HTTP API | 可填相对路径；也可填 JSON（`path/method/params/headers/body`） |
+| Kafka | Topic 名；或 JSON（`topic`、`maxRecords`、`pollTimeoutMs`、`autoOffsetReset`） |
 | Redis | Key |
 | Excel | 工作表名，可留空使用第一张表 |
 | Mock | 不需要 |

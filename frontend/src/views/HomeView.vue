@@ -3,7 +3,7 @@
     <div class="hero card">
       <h1>零代码 / 低代码可视化大屏数据配置</h1>
       <p class="lead">
-        统一管理 MySQL、PostgreSQL、HTTP API、Redis、Excel 与 Mock；在线测试连接；用轻量 JavaScript
+        统一管理 MySQL、PostgreSQL、HTTP API、Redis、Kafka、Excel 与 Mock；在线测试连接；用轻量 JavaScript
         做过滤、聚合与结构转换；输出标准 JSON 供大屏或图表直接消费。
       </p>
       <div class="actions">
@@ -15,7 +15,7 @@
       <el-col :span="8">
         <div class="card feat">
           <h3>一键测试</h3>
-          <p>保存前验证 JDBC / HTTP / Redis / 文件是否可用，减少联调等待。</p>
+          <p>保存前验证 JDBC / HTTP / Redis / Kafka / 文件是否可用，减少联调等待。</p>
         </div>
       </el-col>
       <el-col :span="8">
