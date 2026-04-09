@@ -4,16 +4,25 @@ import lombok.Data;
 import com.baomidou.mybatisplus.annotation.*;
 import java.time.Instant;
 
+/**
+ * 流程执行记录实体：记录每次流程执行的详细信息。
+ */
 @Data
 @TableName("ds_pipeline_execution")
 public class PipelineExecutionRecord {
-
+    /**
+     * 执行记录ID
+     */
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long pipelineId;
     /**
-     * 全局唯一，用于查询结果
+     * 流程ID
+     */
+    private Long pipelineId;
+
+    /**
+     * 全局唯一，用于查询执行结果
      */
     private String executionId;
 
@@ -23,7 +32,7 @@ public class PipelineExecutionRecord {
     private String triggerType;
 
     /**
-     * 输入参数（JSON）
+     * 输入参数（JSON 字符串格式）
      */
     private String inputParams;
 
@@ -42,7 +51,14 @@ public class PipelineExecutionRecord {
      */
     private String errorMsg;
 
+    /**
+     * 开始时间
+     */
     private Instant startTime;
+
+    /**
+     * 结束时间
+     */
     private Instant endTime;
 
     /**

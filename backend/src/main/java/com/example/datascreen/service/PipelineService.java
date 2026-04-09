@@ -24,6 +24,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 流程服务
+ */
 @Service
 @RequiredArgsConstructor
 public class PipelineService {
@@ -33,7 +36,9 @@ public class PipelineService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 保存pipeline
+     * 保存流程定义
+     * @param request 保存请求
+     * @return 保存的流程ID
      */
     public Long savePipeline(SavePipelineRequest request) {
         if (request.getId() == null) {
@@ -61,14 +66,20 @@ public class PipelineService {
     }
 
     /**
-     * 获取pipeline
+     * 获取流程定义
+     * @param id 流程ID
+     * @return 流程实体
      */
     public PipelineEntity getById(Long id) {
         return pipelineRepository.selectById(id);
     }
 
     /**
-     * 分页获取pipeline
+     * 分页获取流程定义列表
+     * @param page 页码
+     * @param size 每页数量
+     * @param keyword 搜索关键词（可选）
+     * @return 分页结果
      */
     public PageResult<PipelineEntity> listPipelines(int page, int size, String keyword) {
         LambdaQueryWrapper<PipelineEntity> qw = new LambdaQueryWrapper<>();
@@ -90,10 +101,18 @@ public class PipelineService {
         return result;
     }
 
+    /**
+     * 删除流程定义
+     * @param id 流程ID
+     */
     public void deletePipeline(Long id) {
         pipelineRepository.deleteById(id);
     }
 
+    /**
+     * 发布流程定义
+     * @param id 流程ID
+     */
     public void publishPipeline(Long id) {
         PipelineEntity entity = pipelineRepository.selectById(id);
         if (entity == null) throw new RuntimeException("流程不存在");
@@ -101,10 +120,20 @@ public class PipelineService {
         pipelineRepository.updateById(entity);
     }
 
+    /**
+     * 根据公开令牌获取流程定义
+     * @param token 公开令牌
+     * @return 流程实体
+     */
     public PipelineEntity findByPublicToken(String token) {
         return pipelineRepository.findByPublicToken(token);
     }
 
+    /**
+     * 重新生成公开令牌
+     * @param id 流程ID
+     * @return 重新生成的流程实体
+     */
     public PipelineEntity regenerateToken(Long id) {
         PipelineEntity entity = pipelineRepository.selectById(id);
         if (entity == null) {
@@ -115,6 +144,12 @@ public class PipelineService {
         return entity;
     }
 
+    /**
+     * 设置流程定义是否开启外部调用
+     * @param id 流程ID
+     * @param enabled 是否开启外部调用
+     * @return 更新后的流程实体
+     */
     public PipelineEntity setExternalEnabled(Long id, boolean enabled) {
         PipelineEntity entity = pipelineRepository.selectById(id);
         if (entity == null) {
@@ -125,6 +160,11 @@ public class PipelineService {
         return entity;
     }
 
+    /**
+     * 获取已发布的流程定义
+     * @param id 流程ID
+     * @return 已发布的流程实体
+     */
     public PipelineEntity getPublishedPipeline(Long id) {
         PipelineEntity entity = pipelineRepository.selectById(id);
         if (entity == null) {
@@ -133,6 +173,11 @@ public class PipelineService {
         return "published".equalsIgnoreCase(entity.getStatus()) ? entity : null;
     }
 
+    /**
+     * 获取流程执行记录
+     * @param executionId 执行ID
+     * @return 执行记录实体
+     */
     public PipelineExecutionRecord getExecutionRecord(String executionId) {
         return executionMapper.selectOne(
                 new LambdaQueryWrapper<PipelineExecutionRecord>()
@@ -141,6 +186,13 @@ public class PipelineService {
         );
     }
 
+    /**
+     * 获取流程执行历史记录
+     * @param pipelineId 流程ID
+     * @param page 页码
+     * @param size 每页数量
+     * @return 执行记录列表
+     */
     public List<PipelineExecutionRecord> getExecutionHistory(Long pipelineId, int page, int size) {
         LambdaQueryWrapper<PipelineExecutionRecord> qw = new LambdaQueryWrapper<PipelineExecutionRecord>()
                 .eq(PipelineExecutionRecord::getPipelineId, pipelineId)
@@ -153,14 +205,27 @@ public class PipelineService {
         return new ArrayList<>(all.subList(from, to));
     }
 
+    /**
+     * 保存流程执行记录
+     * @param record 执行记录实体
+     */
     public void saveExecutionRecord(PipelineExecutionRecord record) {
         executionMapper.insert(record);
     }
 
+    /**
+     * 更新流程执行记录
+     * @param record 执行记录实体
+     */
     public void updateExecutionRecord(PipelineExecutionRecord record) {
         executionMapper.updateById(record);
     }
 
+    /**
+     * 验证流程定义是否符合要求
+     * @param definitionJson 流程定义 JSON 字符串
+     * @return 验证错误列表，若为空则表示验证通过
+     */
     public List<String> validatePipeline(String definitionJson) {
         List<String> errors = new ArrayList<>();
         if (definitionJson == null || definitionJson.isBlank()) {
@@ -246,6 +311,11 @@ public class PipelineService {
         return errors;
     }
 
+    /**
+     * 验证节点配置是否符合要求
+     * @param node 节点实体
+     * @param errors 验证错误列表
+     */
     private void validateNodeConfig(Node node, List<String> errors) {
         String id = node.getId();
         NodeType type = node.getType();
@@ -332,6 +402,12 @@ public class PipelineService {
         }
     }
 
+    /**
+     * 检查节点依赖关系是否存在环依赖
+     * @param nodes 节点列表
+     * @param nodeById 节点ID映射
+     * @return 验证错误列表，若为空则表示验证通过
+     */
     private List<String> checkCycle(List<Node> nodes, Map<String, Node> nodeById) {
         List<String> errors = new ArrayList<>();
         Map<String, Integer> inDegree = new HashMap<>();

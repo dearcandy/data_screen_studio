@@ -9,27 +9,30 @@ import java.util.UUID;
 @TableName("ds_pipeline")
 public class PipelineEntity {
 
+    /**
+     * 流程ID
+     */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * Pipeline 名称
+     * 流程名称
      */
     private String name;
 
     /**
-     * 描述
+     * 流程描述
      */
     private String description;
 
     /**
-     * Pipeline 定义 JSON（完整 DAG 结构）
+     * 流程定义 JSON（完整 DAG 结构）
      * 也可将节点和连接拆分到子表，这里为了灵活先用 JSON
      */
     private String definitionJson;
 
     /**
-     * 状态：draft / published / archived
+     * 流程状态：draft / published / archived
      */
     private String status;
 
@@ -50,9 +53,15 @@ public class PipelineEntity {
     @TableField("external_enabled")
     private boolean externalEnabled = false;
 
+    /**
+     * 创建时间
+     */
     @TableField(fill = FieldFill.INSERT)
     private Instant createdAt;
 
+    /**
+     * 更新时间
+     */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Instant updatedAt;
 }

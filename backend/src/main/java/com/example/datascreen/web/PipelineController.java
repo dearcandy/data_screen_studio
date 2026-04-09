@@ -31,7 +31,9 @@ public class PipelineController {
     private final PipelineEngine pipelineEngine;
 
     /**
-     * 创建或更新 Pipeline 定义
+     * 创建或更新流程定义
+     * @param request 流程定义
+     * @return 流程ID
      */
     @PostMapping("/save")
     public ResponseEntity<Map<String, Object>> savePipeline(@Valid @RequestBody SavePipelineRequest request) {
@@ -40,7 +42,9 @@ public class PipelineController {
     }
 
     /**
-     * 根据 ID 查询 Pipeline 定义
+     * 根据 ID 查询流程定义
+     * @param id 流程ID
+     * @return 流程定义
      */
     @GetMapping("/{id}")
     public ResponseEntity<PipelineEntity> getPipeline(@PathVariable Long id) {
@@ -49,7 +53,11 @@ public class PipelineController {
     }
 
     /**
-     * 分页查询 Pipeline 列表
+     * 分页查询流程列表
+     * @param page 页码
+     * @param size 每页数量
+     * @param keyword 搜索关键词（可选）
+     * @return 分页结果
      */
     @GetMapping("/list")
     public ResponseEntity<PageResult<PipelineEntity>> listPipelines(@RequestParam(defaultValue = "1") int page,
@@ -60,7 +68,9 @@ public class PipelineController {
     }
 
     /**
-     * 删除 Pipeline（逻辑删除或物理删除）
+     * 删除流程（逻辑删除或物理删除）
+     * @param id 流程ID
+     * @return 无内容响应
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePipeline(@PathVariable Long id) {
@@ -69,7 +79,9 @@ public class PipelineController {
     }
 
     /**
-     * 发布 Pipeline（状态改为 published）
+     * 发布流程（状态改为 published）
+     * @param id 流程ID
+     * @return 无内容响应
      */
     @PostMapping("/{id}/publish")
     public ResponseEntity<Void> publishPipeline(@PathVariable Long id) {
@@ -78,7 +90,9 @@ public class PipelineController {
     }
 
     /**
-     * 同步执行 Pipeline（适用于短时任务，直接返回结果）
+     * 同步执行流程（适用于短时任务，直接返回结果）
+     * @param request 执行请求
+     * @return 执行结果
      */
     @PostMapping("/execute/sync")
     public ResponseEntity<Object> executeSync(@RequestBody @Valid ExecutePipelineRequest request) {
@@ -94,11 +108,13 @@ public class PipelineController {
     }
 
     /**
-     * 预览执行（允许 draft 状态，用于编辑页调试）
+     * 预览执行流程（允许 draft 状态，用于编辑页调试）
+     * @param id 流程ID
+     * @param params 执行参数（可选）
+     * @return 执行结果
      */
     @PostMapping("/{id}/preview")
-    public ResponseEntity<Object> preview(@PathVariable Long id,
-                                          @RequestBody(required = false) Map<String, Object> params) {
+    public ResponseEntity<Object> preview(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> params) {
         long start = System.currentTimeMillis();
         try {
             Object result = pipelineEngine.previewById(id, params != null ? params : Map.of());
@@ -111,7 +127,9 @@ public class PipelineController {
     }
 
     /**
-     * 异步执行 Pipeline（返回 executionId，轮询结果）
+     * 异步执行流程（返回 executionId，轮询结果）
+     * @param request 执行请求
+     * @return 执行ID
      */
     @PostMapping("/execute/async")
     public ResponseEntity<Map<String, String>> executeAsync(@RequestBody @Valid ExecutePipelineRequest request) {
@@ -121,6 +139,10 @@ public class PipelineController {
 
     /**
      * 查询异步执行结果
+     * @param executionId 执行ID
+     * @return 执行记录
+     * @throws IllegalArgumentException 如果执行ID不存在
+     * @throws IllegalArgumentException 如果执行记录状态不是 completed 或 failed
      */
     @GetMapping("/execution/{executionId}")
     public ResponseEntity<PipelineExecutionRecord> getExecutionResult(@PathVariable String executionId) {
@@ -132,7 +154,11 @@ public class PipelineController {
     }
 
     /**
-     * 查询某个 Pipeline 的执行历史
+     * 查询某个流程 的执行历史记录
+     * @param pipelineId 流程ID
+     * @param page 页码（默认 1）
+     * @param size 每页数量（默认 10）
+     * @return 执行记录列表
      */
     @GetMapping("/{pipelineId}/executions")
     public ResponseEntity<List<PipelineExecutionRecord>> getExecutionHistory(@PathVariable Long pipelineId,
@@ -142,11 +168,23 @@ public class PipelineController {
         return ResponseEntity.ok(records);
     }
 
+    /**
+     * 重新生成流程的 API 密钥（用于外部调用）
+     * @param id 流程ID
+     * @return 重新生成的 API 密钥
+     */
     @PostMapping("/{id}/regenerate-token")
     public ResponseEntity<PipelineEntity> regenerateToken(@PathVariable Long id) {
         return ResponseEntity.ok(pipelineService.regenerateToken(id));
     }
 
+
+    /**
+     * 设置流程是否启用外部调用（默认启用）
+     * @param id 流程ID
+     * @param req 包含 enabled 字段的 JSON 请求体
+     * @return 更新后的流程实体
+     */
     @PostMapping("/{id}/external-enabled")
     public ResponseEntity<PipelineEntity> setExternalEnabled(@PathVariable Long id,
                                                              @RequestBody Map<String, Object> req) {
@@ -155,7 +193,9 @@ public class PipelineController {
     }
 
     /**
-     * 验证 Pipeline 定义（检查 DAG 是否有环、节点配置是否正确）
+     * 验证流程定义（检查 DAG 是否有环、节点配置是否正确）
+     * @param request 验证请求
+     * @return 验证结果
      */
     @PostMapping("/validate")
     public ResponseEntity<Map<String, Object>> validatePipeline(@RequestBody @Valid ValidatePipelineRequest request) {

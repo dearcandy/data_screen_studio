@@ -2,6 +2,7 @@ package com.example.datascreen.service.pipeline.executor;
 
 
 import com.example.datascreen.model.Node;
+import com.example.datascreen.model.NodeType;
 import com.example.datascreen.service.pipeline.PipelineContext;
 
 import java.util.Map;
@@ -22,7 +23,8 @@ public interface NodeExecutor {
     Object execute(Node node, PipelineContext context, Map<String, Object> params) throws Exception;
 
     /**
-     * 判断是否支持该节点类型
+     * 获取节点类型
+     * @return 节点类型
      */
-    boolean supports(String nodeType);
+    NodeType type();
 }

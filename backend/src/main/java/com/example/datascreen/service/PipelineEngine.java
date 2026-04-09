@@ -18,26 +18,42 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * Pipeline 引擎：负责执行 Pipeline 定义。
+ */
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class PipelineEngine {
 
     private final PipelineService pipelineService;
     private final NodeExecutorRegistry executorRegistry;
     private final ObjectMapper objectMapper;
 
-    // 存储异步执行任务，用于取消
+    /**
+     * 存储异步执行任务，用于取消任务
+     */
     private final Map<String, Future<?>> runningTasks = new ConcurrentHashMap<>();
+    /**
+     * 异步执行线程池
+     */
     private final ExecutorService asyncExecutor = Executors.newCachedThreadPool();
 
     /**
      * 执行 Pipeline（支持同步/异步）
+     * @param request 执行请求
+     * @return 执行响应
      */
     public ExecuteResponse execute(ExecuteRequest request) {
         return executeInternal(request, true);
     }
 
+    /**
+     * 执行 Pipeline（支持同步/异步）
+     * @param request 执行请求
+     * @param publishedOnly 是否仅执行已发布的 Pipeline
+     * @return 执行响应
+     */
     private ExecuteResponse executeInternal(ExecuteRequest request, boolean publishedOnly) {
         Long pipelineId = request.getPipelineId();
         Map<String, Object> inputParams = request.getInputParams() != null ? request.getInputParams() : Map.of();
@@ -82,6 +98,9 @@ public class PipelineEngine {
 
     /**
      * 实际执行逻辑（同步）
+     * @param definition Pipeline 定义
+     * @param executionId 执行ID
+     * @return 执行结果
      */
     private Object doExecute(PipelineDefinition definition, Map<String, Object> inputParams, String executionId) {
         log.info("开始执行流程，执行ID={}", executionId);
@@ -121,6 +140,9 @@ public class PipelineEngine {
 
     /**
      * 拓扑排序（Kahn 算法）
+     * @param nodes 节点列表
+     * @return 拓扑排序后的节点列表
+     * @throws IllegalArgumentException 节点列表为空或包含无效节点
      */
     private List<Node> topologicalSort(List<Node> nodes) {
         if (nodes == null || nodes.isEmpty()) {
@@ -181,6 +203,9 @@ public class PipelineEngine {
 
     /**
      * 提取最终输出：若有 output 类型节点，取最后一个 output 节点的输出；否则取最后执行的节点输出
+     * @param definition Pipeline 定义
+     * @param context 执行上下文
+     * @return 最终输出
      */
     private Object extractFinalOutput(PipelineDefinition definition, PipelineContext context) {
         List<Node> outputNodes = definition.getNodes().stream()
@@ -197,6 +222,12 @@ public class PipelineEngine {
         return context.getNodeOutput(lastNode.getId());
     }
 
+    /**
+     * 解析 JSON 字符串为 PipelineDefinition
+     * @param definitionJson JSON 字符串
+     * @return 解析后的 PipelineDefinition
+     * @throws RuntimeException 解析异常
+     */
     private PipelineDefinition parseDefinition(String definitionJson) {
         try {
             return objectMapper.readValue(definitionJson, PipelineDefinition.class);
@@ -205,6 +236,13 @@ public class PipelineEngine {
         }
     }
 
+    /**
+     * 更新执行记录状态
+     * @param executionId 执行ID
+     * @param status 新状态
+     * @param result 执行结果（可选）
+     * @param errorMsg 错误消息（可选）
+     */
     private void updateExecutionStatus(String executionId, String status, Object result, String errorMsg) {
         PipelineExecutionRecord record = pipelineService.getExecutionRecord(executionId);
         if (record == null) return;
@@ -219,6 +257,11 @@ public class PipelineEngine {
         pipelineService.updateExecutionRecord(record);
     }
 
+    /**
+     * 将对象转换为 JSON 字符串
+     * @param obj 要转换的对象
+     * @return JSON 字符串
+     */
     private String writeValueAsString(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);
@@ -230,6 +273,7 @@ public class PipelineEngine {
 
     /**
      * 取消执行中的任务
+     * @param executionId 执行ID
      */
     public void cancel(String executionId) {
         Future<?> future = runningTasks.get(executionId);
@@ -244,6 +288,12 @@ public class PipelineEngine {
         }
     }
 
+    /**
+     * 执行同步流程
+     * @param pipelineId 流程ID
+     * @param params 输入参数
+     * @return 执行结果 （可为 null）
+     */
     public Object executeSync(Long pipelineId, Map<String, Object> params) {
         ExecuteRequest request = new ExecuteRequest();
         request.setPipelineId(pipelineId);
@@ -254,6 +304,12 @@ public class PipelineEngine {
         return response.getResult();
     }
 
+    /**
+     * 执行异步流程
+     * @param pipelineId 流程ID
+     * @param params 输入参数
+     * @return 执行ID
+     */
     public String executeAsync(Long pipelineId, Map<String, Object> params) {
         ExecuteRequest request = new ExecuteRequest();
         request.setPipelineId(pipelineId);
@@ -264,6 +320,12 @@ public class PipelineEngine {
         return response.getExecutionId();
     }
 
+    /**
+     * 预览流程
+     * @param pipelineId 流程ID
+     * @param params 输入参数
+     * @return 执行结果 （可为 null）
+     */
     public Object previewById(Long pipelineId, Map<String, Object> params) {
         ExecuteRequest request = new ExecuteRequest();
         request.setPipelineId(pipelineId);
@@ -274,6 +336,12 @@ public class PipelineEngine {
         return response.getResult();
     }
 
+    /**
+     * 执行外部调用流程
+     * @param token 外部调用令牌
+     * @param params 输入参数
+     * @return 执行结果 （可为 null）
+     */
     public Object executeByPublicToken(String token, Map<String, Object> params) {
         PipelineEntity pipeline = pipelineService.findByPublicToken(token);
         if (pipeline == null) {

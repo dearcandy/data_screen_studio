@@ -2,17 +2,16 @@ package com.example.datascreen.service.pipeline.executor;
 
 
 import com.example.datascreen.model.Node;
+import com.example.datascreen.model.NodeType;
 import com.example.datascreen.service.pipeline.PipelineContext;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 
+/**
+ * 输出节点执行器
+ */
 @Component
 public class OutputNodeExecutor extends AbstractNodeExecutor {
-
-    @Override
-    public boolean supports(String nodeType) {
-        return "output".equals(nodeType);
-    }
 
     @Override
     protected Object doExecute(Node node, PipelineContext context, Map<String, Object> params) {
@@ -25,5 +24,10 @@ public class OutputNodeExecutor extends AbstractNodeExecutor {
             return input; // 实际会序列化
         }
         return input;
+    }
+
+    @Override
+    public NodeType type() {
+        return NodeType.OUTPUT;
     }
 }

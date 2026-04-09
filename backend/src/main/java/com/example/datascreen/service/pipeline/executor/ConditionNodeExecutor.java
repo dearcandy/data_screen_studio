@@ -1,6 +1,7 @@
 package com.example.datascreen.service.pipeline.executor;
 
 import com.example.datascreen.model.Node;
+import com.example.datascreen.model.NodeType;
 import com.example.datascreen.service.pipeline.PipelineContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,18 +10,17 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 import java.util.Map;
 
+/**
+ * 条件节点执行器：根据表达式判断是否分支。
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ConditionNodeExecutor extends AbstractNodeExecutor {
 
-    @Override
-    public boolean supports(String nodeType) {
-        return "condition".equals(nodeType);
-    }
 
     @Override
-    protected Object doExecute(Node node, PipelineContext context, Map<String, Object> params) throws Exception {
+    protected Object doExecute(Node node, PipelineContext context, Map<String, Object> params) {
         String expression = node.getConfigString("expression");
         if (expression == null) {
             throw new IllegalArgumentException("条件节点必须配置 expression");
@@ -52,5 +52,10 @@ public class ConditionNodeExecutor extends AbstractNodeExecutor {
         } catch (Exception e) {
             throw new RuntimeException("条件表达式计算失败: " + expr, e);
         }
+    }
+
+    @Override
+    public NodeType type() {
+        return NodeType.CONDITION;
     }
 }

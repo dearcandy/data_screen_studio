@@ -18,7 +18,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @TableName("ds_data_set")
 public class DataSetEntity {
-
+    /**
+     * 数据集ID
+     */
     @TableId(type = IdType.AUTO)
     private Long id;
 
@@ -58,13 +60,13 @@ public class DataSetEntity {
     private String scriptText;
 
     /**
-     * 接口访问路径token
+     * 数据集公开访问路径token
      */
     @TableField("public_token")
     private String publicToken = UUID.randomUUID().toString().replace("-", "");
 
     /**
-     * 是否启用嵌入接口访问
+     * 是否启用公开数据集访问
      */
     private boolean enabled = true;
 

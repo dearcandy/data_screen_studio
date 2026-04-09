@@ -12,13 +12,16 @@ import java.time.Instant;
 
 
 /**
- * 数据源实体：保存连接类型与配置 JSON，不保存实际业务数据。
+ * 数据源实体：保存连接数据库、文件系统等数据源的连接类型与配置 JSON，不保存实际业务数据。
  */
 @Data
 @NoArgsConstructor
 @TableName("ds_data_source")
 public class DataSourceEntity {
 
+    /**
+     * 数据源ID
+     */
     @TableId(type = IdType.AUTO)
     private Long id;
 

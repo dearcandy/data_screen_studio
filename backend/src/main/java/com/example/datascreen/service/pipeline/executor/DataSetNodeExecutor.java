@@ -1,6 +1,7 @@
 package com.example.datascreen.service.pipeline.executor;
 
 import com.example.datascreen.model.Node;
+import com.example.datascreen.model.NodeType;
 import com.example.datascreen.service.DataSetService;
 import com.example.datascreen.service.pipeline.PipelineContext;
 import lombok.RequiredArgsConstructor;
@@ -8,18 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 
-
+/**
+ * 数据集节点执行器
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class DataSetNodeExecutor extends AbstractNodeExecutor {
 
     private final DataSetService dataSetService;
-
-    @Override
-    public boolean supports(String nodeType) {
-        return "dataSet".equals(nodeType);
-    }
 
     @Override
     protected Object doExecute(Node node, PipelineContext context, Map<String, Object> params) throws Exception {
@@ -32,4 +30,8 @@ public class DataSetNodeExecutor extends AbstractNodeExecutor {
         return result;
     }
 
+    @Override
+    public NodeType type() {
+        return NodeType.DATA_SET;
+    }
 }

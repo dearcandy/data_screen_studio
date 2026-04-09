@@ -2,6 +2,7 @@ package com.example.datascreen.web;
 
 import com.example.datascreen.dto.ApiResponse;
 import com.example.datascreen.service.StudioPaths;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,13 +20,11 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/files")
+@RequiredArgsConstructor
 public class FileUploadController {
 
     private final StudioPaths studioPaths;
 
-    public FileUploadController(StudioPaths studioPaths) {
-        this.studioPaths = studioPaths;
-    }
 
     /**
      * multipart 字段名必须为 {@code file}；响应 {@code data.fileId} 写入数据源配置即可。

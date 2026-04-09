@@ -16,6 +16,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+/**
+ * 并行节点执行器：并发执行多个分支，合并结果。
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -24,10 +27,6 @@ public class ParallelNodeExecutor extends AbstractNodeExecutor {
     private final ObjectProvider<NodeExecutorRegistry> executorRegistryProvider;
     private final ExecutorService parallelExecutor = Executors.newCachedThreadPool();
 
-    @Override
-    public boolean supports(String nodeType) {
-        return "parallel".equals(nodeType);
-    }
 
     @Override
     protected Object doExecute(Node node, PipelineContext context, Map<String, Object> params) throws Exception {
@@ -113,5 +112,10 @@ public class ParallelNodeExecutor extends AbstractNodeExecutor {
             throw new IllegalStateException("节点执行器注册表不可用");
         }
         return registry.getExecutor(type);
+    }
+
+    @Override
+    public NodeType type() {
+        return NodeType.PARALLEL;
     }
 }
