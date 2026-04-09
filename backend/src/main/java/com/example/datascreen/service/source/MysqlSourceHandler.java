@@ -43,7 +43,7 @@ public class MysqlSourceHandler implements DataSourceTypeHandler {
         String password = cfg.path("password").asText("");
         try (Connection conn = DriverManager.getConnection(url, username, password)) {
             if (!conn.isValid(JdbcClientConstants.CONNECTION_VALID_TIMEOUT_SECONDS)) {
-                throw new SQLException("Connection is not valid");
+                throw new SQLException("数据库连接无效，请检查配置");
             }
         }
     }

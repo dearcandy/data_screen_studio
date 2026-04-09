@@ -3,8 +3,7 @@ package com.example.datascreen.web;
 import com.example.datascreen.dto.ApiResponse;
 import com.example.datascreen.dto.DataSetRequest;
 import com.example.datascreen.entity.DataSetEntity;
-import com.example.datascreen.service.DataSetCrudService;
-import com.example.datascreen.service.DataSetExecutionService;
+import com.example.datascreen.service.DataSetService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,12 +23,10 @@ import java.util.List;
 @RequestMapping("/api/datasets")
 public class DataSetController {
 
-    private final DataSetCrudService crudService;
-    private final DataSetExecutionService executionService;
+    private final DataSetService dataSetService;
 
-    public DataSetController(DataSetCrudService crudService, DataSetExecutionService executionService) {
-        this.crudService = crudService;
-        this.executionService = executionService;
+    public DataSetController(DataSetService dataSetService) {
+        this.dataSetService = dataSetService;
     }
 
     /**
@@ -38,7 +35,7 @@ public class DataSetController {
      */
     @GetMapping
     public ApiResponse<List<DataSetEntity>> list() {
-        return ApiResponse.ok(crudService.list());
+        return ApiResponse.ok(dataSetService.list());
     }
 
     /**
@@ -48,7 +45,7 @@ public class DataSetController {
      */
     @GetMapping("/{id}")
     public ApiResponse<DataSetEntity> get(@PathVariable Long id) {
-        return ApiResponse.ok(crudService.get(id));
+        return ApiResponse.ok(dataSetService.get(id));
     }
 
     /**
@@ -58,7 +55,7 @@ public class DataSetController {
      */
     @PostMapping
     public ApiResponse<DataSetEntity> create(@Valid @RequestBody DataSetRequest req) {
-        return ApiResponse.ok(crudService.create(req));
+        return ApiResponse.ok(dataSetService.create(req));
     }
 
     /**
@@ -69,7 +66,7 @@ public class DataSetController {
      */
     @PutMapping("/{id}")
     public ApiResponse<DataSetEntity> update(@PathVariable Long id, @Valid @RequestBody DataSetRequest req) {
-        return ApiResponse.ok(crudService.update(id, req));
+        return ApiResponse.ok(dataSetService.update(id, req));
     }
 
     /**
@@ -78,7 +75,7 @@ public class DataSetController {
      */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        crudService.delete(id);
+        dataSetService.delete(id);
         return ApiResponse.ok(null);
     }
 
@@ -89,7 +86,7 @@ public class DataSetController {
      */
     @PostMapping("/{id}/preview")
     public ApiResponse<Object> preview(@PathVariable Long id) throws Exception {
-        Object data = executionService.executeById(id);
+        Object data = dataSetService.executeById(id);
         return ApiResponse.ok(data);
     }
 
@@ -100,6 +97,6 @@ public class DataSetController {
      */
     @PostMapping("/{id}/regenerate-token")
     public ApiResponse<DataSetEntity> regenerateToken(@PathVariable Long id) {
-        return ApiResponse.ok(crudService.regenerateToken(id));
+        return ApiResponse.ok(dataSetService.regenerateToken(id));
     }
 }

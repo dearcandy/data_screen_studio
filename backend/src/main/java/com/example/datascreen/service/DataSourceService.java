@@ -1,9 +1,16 @@
 package com.example.datascreen.service;
 
+import com.example.datascreen.dto.ConnectionTestRequest;
 import com.example.datascreen.dto.DataSourceRequest;
 import com.example.datascreen.entity.DataSourceEntity;
+import com.example.datascreen.model.SourceType;
 import com.example.datascreen.repository.DataSourceRepository;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.datascreen.service.source.DataSourceHandlerManager;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,15 +22,13 @@ import java.util.List;
  * 数据源 CRUD 服务。
  */
 @Service
-public class DataSourceCrudService {
+@RequiredArgsConstructor
+public class DataSourceService {
 
     private final DataSourceRepository repository;
-    private final DataSourceConfigValidator configValidator;
+    private final ObjectMapper objectMapper;
+    private final DataSourceHandlerManager dataSourceHandlerManager;
 
-    public DataSourceCrudService(DataSourceRepository repository, DataSourceConfigValidator configValidator) {
-        this.repository = repository;
-        this.configValidator = configValidator;
-    }
 
     /** 查询全部数据源。 */
     public List<DataSourceEntity> list() {
@@ -42,7 +47,7 @@ public class DataSourceCrudService {
     /** 新建数据源。 */
     @Transactional
     public DataSourceEntity create(DataSourceRequest req) {
-        configValidator.validate(req.getType(), req.getConfigJson());
+        this.validate(req.getType(), req.getConfigJson());
         DataSourceEntity e = new DataSourceEntity();
         e.setName(req.getName());
         e.setType(req.getType());
@@ -57,7 +62,7 @@ public class DataSourceCrudService {
     /** 更新指定数据源。 */
     @Transactional
     public DataSourceEntity update(Long id, DataSourceRequest req) {
-        configValidator.validate(req.getType(), req.getConfigJson());
+        this.validate(req.getType(), req.getConfigJson());
         DataSourceEntity e = get(id);
         e.setName(req.getName());
         e.setType(req.getType());
@@ -72,5 +77,34 @@ public class DataSourceCrudService {
     @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
+    }
+
+
+    /**
+     * 测试数据源联通性
+     */
+    public void test(@Valid ConnectionTestRequest connectionTestRequest) throws Exception {
+        // 校验数据源配置
+        JsonNode cfg = this.validate(connectionTestRequest.getType(), connectionTestRequest.getConfigJson());
+        // 测试数据源连接
+        dataSourceHandlerManager.get(connectionTestRequest.getType()).testConnection(cfg);
+    }
+
+    public JsonNode validate(SourceType type, String configJson) {
+        if (configJson == null || configJson.isBlank()) {
+            throw new IllegalArgumentException("配置 JSON 不能为空");
+        }
+        try {
+            JsonNode cfg = objectMapper.readTree(configJson);
+            if (!cfg.isObject()) {
+                throw new IllegalArgumentException("配置必须是 JSON 对象");
+            }
+            dataSourceHandlerManager.get(type).validateConfig(cfg);
+            return cfg;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("配置 JSON 格式错误: " + e.getMessage());
+        }
     }
 }

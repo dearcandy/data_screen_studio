@@ -37,49 +37,49 @@
         </el-form-item>
 
         <template v-if="form.type === 'MYSQL' || form.type === 'POSTGRESQL'">
-          <el-form-item label="Host"><el-input v-model="form.config.host" /></el-form-item>
-          <el-form-item label="Port"><el-input-number v-model="form.config.port" :min="1" :max="65535" /></el-form-item>
-          <el-form-item label="Database"><el-input v-model="form.config.database" /></el-form-item>
-          <el-form-item label="Username"><el-input v-model="form.config.username" /></el-form-item>
-          <el-form-item label="Password"><el-input v-model="form.config.password" show-password /></el-form-item>
+          <el-form-item label="主机"><el-input v-model="form.config.host" /></el-form-item>
+          <el-form-item label="端口"><el-input-number v-model="form.config.port" :min="1" :max="65535" /></el-form-item>
+          <el-form-item label="数据库"><el-input v-model="form.config.database" /></el-form-item>
+          <el-form-item label="用户名"><el-input v-model="form.config.username" /></el-form-item>
+          <el-form-item label="密码"><el-input v-model="form.config.password" show-password /></el-form-item>
         </template>
 
         <template v-else-if="form.type === 'HTTP_API'">
-          <el-form-item label="Base URL"><el-input v-model="form.config.baseUrl" placeholder="https://api.example.com" /></el-form-item>
-          <el-form-item label="Method">
+          <el-form-item label="基础地址"><el-input v-model="form.config.baseUrl" placeholder="https://api.example.com" /></el-form-item>
+          <el-form-item label="请求方法">
             <el-select v-model="form.config.method" style="width: 100%">
               <el-option label="GET" value="GET" />
               <el-option label="POST" value="POST" />
             </el-select>
           </el-form-item>
-          <el-form-item label="Test Path"><el-input v-model="form.config.testPath" placeholder="/health" /></el-form-item>
-          <el-form-item label="Params(JSON)">
+          <el-form-item label="测试路径"><el-input v-model="form.config.testPath" placeholder="/health" /></el-form-item>
+          <el-form-item label="查询参数(JSON)">
             <el-input v-model="form.config.paramsText" type="textarea" :rows="4" class="mono" />
           </el-form-item>
-          <el-form-item label="Headers(JSON)">
+          <el-form-item label="请求头(JSON)">
             <el-input v-model="form.config.headersText" type="textarea" :rows="4" class="mono" />
           </el-form-item>
-          <el-form-item label="Body(JSON)">
+          <el-form-item label="请求体(JSON)">
             <el-input v-model="form.config.bodyText" type="textarea" :rows="5" class="mono" />
             <div class="hint">POST 时会携带 body；GET 会忽略 body。</div>
           </el-form-item>
         </template>
 
         <template v-else-if="form.type === 'REDIS'">
-          <el-form-item label="Host"><el-input v-model="form.config.host" /></el-form-item>
-          <el-form-item label="Port"><el-input-number v-model="form.config.port" :min="1" :max="65535" /></el-form-item>
-          <el-form-item label="Password"><el-input v-model="form.config.password" show-password /></el-form-item>
-          <el-form-item label="Database"><el-input-number v-model="form.config.database" :min="0" :max="64" /></el-form-item>
+          <el-form-item label="主机"><el-input v-model="form.config.host" /></el-form-item>
+          <el-form-item label="端口"><el-input-number v-model="form.config.port" :min="1" :max="65535" /></el-form-item>
+          <el-form-item label="密码"><el-input v-model="form.config.password" show-password /></el-form-item>
+          <el-form-item label="库编号"><el-input-number v-model="form.config.database" :min="0" :max="64" /></el-form-item>
         </template>
 
         <template v-else-if="form.type === 'KAFKA'">
-          <el-form-item label="Bootstrap">
+          <el-form-item label="服务地址">
             <el-input v-model="form.config.bootstrapServers" placeholder="host1:9092,host2:9092" />
           </el-form-item>
-          <el-form-item label="Test Topic">
+          <el-form-item label="测试 Topic">
             <el-input v-model="form.config.testTopic" placeholder="可选，测试时校验该 topic 是否存在" />
           </el-form-item>
-          <el-form-item label="Security">
+          <el-form-item label="安全协议">
             <el-select v-model="form.config.securityProtocol" style="width: 100%">
               <el-option label="PLAINTEXT" value="PLAINTEXT" />
               <el-option label="SSL" value="SSL" />
@@ -87,16 +87,16 @@
               <el-option label="SASL_SSL" value="SASL_SSL" />
             </el-select>
           </el-form-item>
-          <el-form-item label="SASL 机制">
+          <el-form-item label="SASL机制">
             <el-select v-model="form.config.saslMechanism" clearable placeholder="无 SASL 可留空" style="width: 100%">
               <el-option label="PLAIN" value="PLAIN" />
               <el-option label="SCRAM-SHA-256" value="SCRAM-SHA-256" />
               <el-option label="SCRAM-SHA-512" value="SCRAM-SHA-512" />
             </el-select>
           </el-form-item>
-          <el-form-item label="SASL 用户"><el-input v-model="form.config.saslUsername" /></el-form-item>
-          <el-form-item label="SASL 密码"><el-input v-model="form.config.saslPassword" show-password /></el-form-item>
-          <el-form-item label="默认 Topic">
+          <el-form-item label="SASL用户"><el-input v-model="form.config.saslUsername" /></el-form-item>
+          <el-form-item label="SASL密码"><el-input v-model="form.config.saslPassword" show-password /></el-form-item>
+          <el-form-item label="默认Topic">
             <el-input v-model="form.config.defaultTopic" placeholder="数据集 fetchSpec 可留空时使用" />
           </el-form-item>
           <el-form-item label="默认 maxRecords"><el-input-number v-model="form.config.defaultMaxRecords" :min="1" :max="500" /></el-form-item>
@@ -119,7 +119,7 @@
             </el-upload>
             <div class="hint">上传后自动回填 fileId。</div>
           </el-form-item>
-          <el-form-item label="fileId"><el-input v-model="form.config.fileId" /></el-form-item>
+          <el-form-item label="文件ID"><el-input v-model="form.config.fileId" /></el-form-item>
         </template>
 
         <template v-else-if="form.type === 'MOCK'">
@@ -215,23 +215,23 @@ function buildConfigObject() {
     try {
       params = form.config.paramsText ? JSON.parse(form.config.paramsText) : {}
     } catch {
-      throw new Error('Params 必须是合法 JSON 对象')
+      throw new Error('查询参数必须是合法 JSON 对象')
     }
     try {
       headers = form.config.headersText ? JSON.parse(form.config.headersText) : {}
     } catch {
-      throw new Error('Headers 必须是合法 JSON 对象')
+      throw new Error('请求头必须是合法 JSON 对象')
     }
     try {
       body = form.config.bodyText ? JSON.parse(form.config.bodyText) : null
     } catch {
-      throw new Error('Body 必须是合法 JSON')
+      throw new Error('请求体必须是合法 JSON')
     }
     if (typeof params !== 'object' || params === null || Array.isArray(params)) {
-      throw new Error('Params 必须是 JSON 对象')
+      throw new Error('查询参数必须是 JSON 对象')
     }
     if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
-      throw new Error('Headers 必须是 JSON 对象')
+      throw new Error('请求头必须是 JSON 对象')
     }
     return {
       baseUrl: String(form.config.baseUrl || '').trim(),
@@ -425,7 +425,7 @@ async function onFile(file) {
   try {
     const data = await uploadExcel(raw)
     form.config.fileId = data.fileId
-    ElMessage.success('上传成功，fileId 已回填')
+    ElMessage.success('上传成功，文件ID已回填')
   } catch (e) {
     ElMessage.error(e.message || '上传失败')
   }

@@ -19,6 +19,8 @@
           <el-menu-item index="/">概览</el-menu-item>
           <el-menu-item index="/datasources">数据源</el-menu-item>
           <el-menu-item index="/datasets">数据集</el-menu-item>
+          <el-menu-item index="/pipelines">流程</el-menu-item>
+          <el-menu-item index="/external">外部调用</el-menu-item>
         </el-menu>
       </header>
       <main class="main">

@@ -9,6 +9,8 @@
       <div class="actions">
         <el-button type="primary" @click="$router.push('/datasources')">配置数据源</el-button>
         <el-button @click="$router.push('/datasets')">配置数据集</el-button>
+        <el-button @click="$router.push('/pipelines')">配置流程</el-button>
+        <el-button @click="$router.push('/external')">外部调用管理</el-button>
       </div>
     </div>
     <el-row :gutter="16" style="margin-top: 16px">

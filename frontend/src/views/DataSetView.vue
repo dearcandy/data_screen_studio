@@ -52,7 +52,7 @@
           <el-form-item label="路径">
             <el-input v-model="form.httpPath" placeholder="例如 /users 或 /api/v1/query" />
           </el-form-item>
-          <el-form-item label="Method">
+          <el-form-item label="请求方法">
             <el-select v-model="form.httpMethod" style="width: 100%">
               <el-option label="GET" value="GET" />
               <el-option label="POST" value="POST" />
@@ -61,10 +61,10 @@
           <el-form-item label="Query 参数">
             <el-input v-model="form.httpParamsText" type="textarea" :rows="4" class="mono" placeholder='JSON 对象，如 {"id":"1"}' />
           </el-form-item>
-          <el-form-item label="Headers">
+          <el-form-item label="请求头">
             <el-input v-model="form.httpHeadersText" type="textarea" :rows="3" class="mono" placeholder='JSON 对象，如 {"Authorization":"Bearer ..."}' />
           </el-form-item>
-          <el-form-item label="Body">
+          <el-form-item label="请求体">
             <el-input v-model="form.httpBodyText" type="textarea" :rows="4" class="mono" placeholder="仅 POST 时作为 JSON 请求体发送；留空则不传 body" />
           </el-form-item>
           <el-form-item label="fetchSpec 预览">
@@ -89,10 +89,12 @@
           <div class="hint">MOCK 模式或联调占位时使用，例如：<code>[{"a":1}]</code></div>
         </el-form-item>
         <el-form-item label="脚本 (JS)">
-          <el-input v-model="form.scriptText" type="textarea" :rows="8" class="mono" />
+          <div class="script-field-head">
+            <el-button link type="primary" @click="scriptDocVisible = true">脚本语法说明</el-button>
+          </div>
+          <ScriptEditor v-model="form.scriptText" />
           <div class="hint">
-            函数体：接收 <code>input</code>，须 <code>return</code> 结果。示例：
-            <code>return input.filter(r => r.amount &gt; 0);</code>
+            GraalJS（ES2022）：后端在脚本前注入 <code>const input = …</code>，请用 <code>return</code> 返回结果。支持语法高亮与基础语法检查。
           </div>
         </el-form-item>
         <el-form-item label="启用">
@@ -108,6 +110,8 @@
     <el-dialog v-model="previewVisible" title="预览结果" width="720px">
       <pre class="mono preview">{{ previewJson }}</pre>
     </el-dialog>
+
+    <ScriptHelpDrawer v-model="scriptDocVisible" />
   </div>
 </template>
 
@@ -116,12 +120,15 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listDataSets, saveDataSet, removeDataSet, previewDataSet, regenerateToken } from '../api/datasetApi'
 import { listDataSources } from '../api/datasourceApi'
+import ScriptEditor from '../components/ScriptEditor.vue'
+import ScriptHelpDrawer from '../components/ScriptHelpDrawer.vue'
 
 const rows = ref([])
 const sources = ref([])
 const visible = ref(false)
 const previewVisible = ref(false)
 const previewJson = ref('')
+const scriptDocVisible = ref(false)
 
 const form = reactive({
   id: null,
@@ -359,6 +366,11 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.script-field-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
 }
 .token {
   word-break: break-all;
